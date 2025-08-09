@@ -70,19 +70,27 @@ const Play = () =>
 	});
 }
 
-const GenerateCodeChallenge = async () =>
+const GenerateCodeVerifier = () =>
 {
-	const array = new Uint8Array(64);
-	window.crypto.getRandomValues(array);
+  	const array = new Uint8Array(64);
+  	window.crypto.getRandomValues(array);
+  	return btoa(String.fromCharCode(...array))
+    	.replace(/\+/g, "-")
+    	.replace(/\//g, "_")
+    	.replace(/=+$/, "");
+};
+
+const GenerateCodeChallenge = async (codeVerifier) =>
+{
 	const encoder = new TextEncoder();
-	const data = encoder.encode(array);
+	const data = encoder.encode(codeVerifier);
 	const digest = await window.crypto.subtle.digest("SHA-256", data);
 	const base64Digest = btoa(String.fromCharCode(...new Uint8Array(digest)))
 		.replace(/\+/g, "-")
 		.replace(/\//g, "_")
 		.replace(/=+$/, "");
-	return base64Digest;
-}
+  	return base64Digest;
+};
 
 const Authorize = async () =>
 {
@@ -90,16 +98,17 @@ const Authorize = async () =>
 	const redirectUri = "https://copiumbot.github.io/kick";
 	const permissions = `user:read channel:read channel:write chat:write ` +
 		`streamkey:read events:subscribe moderation:ban`;
-	const code_verifier = await GenerateCodeChallenge();
 
-	sessionStorage.setItem("code_verifier", code_verifier);
+	const codeVerifier = GenerateCodeVerifier();
+	const codeChallenge = await GenerateCodeChallenge(codeVerifier);
+	sessionStorage.setItem("code_verifier", codeVerifier);
 
 	window.location.href = `https://id.kick.com/oauth/authorize?` +
 	`response_type=code` + 
 	`&client_id=${encodeURIComponent(clientId)}` + 
 	`&redirect_uri=${encodeURIComponent(redirectUri)}` +
 	`&scope=${encodeURIComponent(permissions)}` +
-	`&code_challenge=${encodeURIComponent(code_verifier)}` +
+	`&code_challenge=${encodeURIComponent(codeChallenge)}` +
 	`&code_challenge_method=S256` +
 	`&state=cope_bot`;
 }
