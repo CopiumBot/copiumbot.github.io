@@ -6,8 +6,8 @@ class CopeKick
         this.channelId = null;
         this.broadasterId = null;
 
-        this.token = null;
-        this.refreshToken = null;
+        this.token = params.token ?? null;
+        this.tokenExpire = params.tokenExpire ?? Date.now();
         
         this._events = {};
         this._wsLink = "wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false";
@@ -290,6 +290,61 @@ class CopeKick
             default:
                 this.logger.Error(`Unhandled message from the server: \n${this.logger.JSON(message)}`);
                 break;
+        }
+    }
+
+    async Say(message)
+    {
+        if(this.tokenExpire < Date.now())
+            this._Emit("token_refresh");
+
+        const maxLength = 500;
+        if(message.length > maxLength)
+        {
+            const msg = message;
+            let lastSpace = msg.slice(0, maxLength).lastIndexOf(" ");
+
+            if(lastSpace === -1)
+                lastSpace = maxLength;
+
+            message = msg.slice(0, lastSpace);
+
+            setTimeout(() =>
+            {
+                this.Say(msg.slice(lastSpace));
+            }, 350);
+        }
+
+        try
+	    {
+            const response = await fetch("https://api.kick.com/public/v1/chat",
+            {
+                method: "POST",
+                headers:
+                {
+                    "Authorization": `Bearer ${this.token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(
+                {
+                    content: message,
+                    type: "bot"
+                })
+            });
+
+            if(!response.ok)
+            {
+                this.logger.Error(`External API error. Error code: ${response.status}`);
+                return;
+            }
+
+            const data = await response.json();
+            if(!data.is_sent)
+                this.logger.Error(`Failed to send a message. Error code: ${response.status}`);
+        }
+        catch(error)
+        {
+            this.logger.Error(`Error while sending data: ${this.logger.JSON(error)}`);
         }
     }
 }

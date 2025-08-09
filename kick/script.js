@@ -53,15 +53,62 @@ const Play = () =>
 
 	client = new CopeKick(
 	{
-		channel: "",
+		channel: "anonimsko",
+		token: localStorage.getItem("token"),
+		tokenExpire: localStorage.getItem("tokenExpire"),
 		logger: logger
 	});
 
 	client.Connect();
 
+	client.On("token_refresh", async () =>
+	{
+		const refreshToken = localStorage.getItem("refreshToken");
+
+		if(!refreshToken)
+		{
+			Authorize();
+			return;
+		}
+
+		try
+		{
+			const response = await fetch("https://cope-bot-backend.vercel.app/api/login/refresh?platform=kick",
+			{
+				method: "POST",
+				headers:
+				{
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify(
+				{
+					refresh_token: refreshToken
+				})
+			});
+
+			if(!response.ok)
+			{
+				logger.Error(`Failed to refresh access token. Error code: ${response.status}`);
+				return;
+			}
+
+			const data = await response.json();
+
+			const now = Date.now();
+			localStorage.setItem("refreshToken", data.refresh_token);
+			localStorage.setItem("token", data.access_token);
+			localStorage.setItem("tokenExpire", now + data.expires_in * 1000);
+		}
+		catch(error)
+		{
+			logger.Error(`Error while sending data: ${logger.JSON(error)}`);
+		}
+	});
+
 	client.On("connected", (channel) =>
 	{
 		logger.Info(`Connected to channel ${channel}`);
+		client.Say("Connected");
 	});
 
 	client.On("message", (channel, username, tags, message) =>
@@ -118,13 +165,8 @@ const GetAuthorizationParams = async () =>
 	const code_verifier = sessionStorage.getItem("code_verifier");
 
 	const params = new URLSearchParams(window.location.search);
-	console.log(params)
 	const code = params.get("code");
 	const state = params.get("state");
-
-	console.log(code)
-	console.log(state)
-	console.log(code_verifier)
 
 	if(!code || !state || !code_verifier)
 		return;
@@ -149,10 +191,18 @@ const GetAuthorizationParams = async () =>
 			})
 		});
 
-		console.log(response.status)
+		if(!response.ok)
+		{
+			logger.Error(`Failed to get access token. Error code: ${response.status}`);
+			return;
+		}
 
 		const data = await response.json();
-		console.log(data)
+
+		const now = Date.now();
+		localStorage.setItem("refreshToken", data.refresh_token);
+		localStorage.setItem("token", data.access_token);
+		localStorage.setItem("tokenExpire", now + data.expires_in * 1000);
 	}
 	catch(error)
 	{
@@ -160,10 +210,10 @@ const GetAuthorizationParams = async () =>
 	}
 }
 
-document.addEventListener("DOMContentLoaded", () =>
+document.addEventListener("DOMContentLoaded", async () =>
 {
-	GetAuthorizationParams();
-	//Play();
+	await GetAuthorizationParams();
+	Play();
 });
 document.getElementById("play").addEventListener("click", Play);
 
