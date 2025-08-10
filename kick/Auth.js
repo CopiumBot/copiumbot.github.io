@@ -2,7 +2,7 @@ class Auth
 {
     constructor(params)
     {
-        this.cliendId = params.clientId ?? null;
+        this.clientId = params.clientId ?? null;
         this.redirectUri = params.redirectUri ?? null;
         this.permissions = params.permissions ?? null;
         this.platform = params.platform ?? null;
@@ -63,7 +63,7 @@ class Auth
 
     async Authorize()
     {
-        if(!this.cliendId || !this.redirectUri || !this.permissions)
+        if(!this.clientId || !this.redirectUri || !this.permissions)
             return;
 
         const code_verifier = this._GenerateCodeVerifier();
@@ -72,7 +72,7 @@ class Auth
 
         window.location.href = `https://id.kick.com/oauth/authorize?` +
         `response_type=code` + 
-        `&client_id=${encodeURIComponent(this.cliendId)}` + 
+        `&client_id=${encodeURIComponent(this.clientId)}` + 
         `&redirect_uri=${encodeURIComponent(this.redirectUri)}` +
         `&scope=${encodeURIComponent(this.permissions)}` +
         `&code_challenge=${encodeURIComponent(codeChallenge)}` +

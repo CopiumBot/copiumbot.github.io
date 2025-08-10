@@ -2,7 +2,7 @@ let logger = new Logger(true);
 let commandHandler = new CommandHandler();
 let auth = new Auth(
 {
-	cliendId: "01K1ZWA9TB9T0ND8VCMD4WAAQ2",
+	clientId: "01K1ZWA9TB9T0ND8VCMD4WAAQ2",
 	redirectUri: "https://copiumbot.github.io/kick",
 	permissions: `user:read channel:read channel:write chat:write ` +
 		`streamkey:read events:subscribe moderation:ban`,
