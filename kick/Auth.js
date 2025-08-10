@@ -88,7 +88,7 @@ class Auth
         const code = params.get("code");
         const state = params.get("state");
 
-        if(!code || !state || !code_verifier)
+        if(!code || !state || !code_verifier || !this.platform)
             return;
 
         if(state !== "cope_bot")
@@ -131,7 +131,7 @@ class Auth
 
     async RefreshToken(refresh_token)
     {
-        if(!refresh_token)
+        if(!refresh_token || !this.platform)
             return;
 
         try
@@ -169,9 +169,12 @@ class Auth
 
     async ConvertNameToIds(name)
     {
+        if(!name)
+            return;
+
         try
         {
-            const response = await fetch(`https://kick.com/api/v2/channels/${name}/`,
+            const response = await fetch(`https://kick.com/api/v2/channels/${name}/chatroom`,
             {
                 method: "GET"
             });
@@ -184,8 +187,8 @@ class Auth
 
             const data = await response.json();
             return {
-                channelId: data.chatroom?.channel_id ?? null,
-                broadasterId: data.chatroom?.id ?? null
+                channelId: data.channel_id ?? null,
+                broadasterId: data.id ?? null
             };
         }
         catch(error)

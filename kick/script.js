@@ -6,6 +6,7 @@ let auth = new Auth(
 	redirectUri: "https://copiumbot.github.io/kick",
 	permissions: `user:read channel:read channel:write chat:write ` +
 		`streamkey:read events:subscribe moderation:ban`,
+	platform: "kick",
 	logger
 });
 let client = new CopeKick({ logger });
