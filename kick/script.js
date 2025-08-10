@@ -1,9 +1,19 @@
 let logger = new Logger(true);
 let commandHandler = new CommandHandler();
+let auth = new Auth(
+{
+	cliendId: "01K1ZWA9TB9T0ND8VCMD4WAAQ2",
+	redirectUri: "https://copiumbot.github.io/kick",
+	permissions: `user:read channel:read channel:write chat:write ` +
+		`streamkey:read events:subscribe moderation:ban`,
+	logger
+});
+let client = new CopeKick({ logger });
+
 const synth = window.speechSynthesis;
 let voices = [];
 let voice = 0;
-let client = new CopeKick();
+
 
 synth.onvoiceschanged = () =>
 {
@@ -44,177 +54,69 @@ const AddToQueue = (message) =>
     synth.speak(utterance);
 }
 
-const Play = () =>
+auth.On("token_received", (data) =>
+{
+	const now = Date.now();
+	const token = data.access_token ?? null;
+	const tokenExpire = now + data.expires_in * 1000 ?? null;
+	const permissions = (data.scope ?? []).split(" ");
+
+    localStorage.setItem("refreshToken", data.refresh_token ?? null);
+	localStorage.setItem("token", token);
+	localStorage.setItem("tokenExpire", tokenExpire);
+	localStorage.setItem("permissions", JSON.stringify(permissions));
+
+	client.SetParams(
+	{
+		token,
+		tokenExpire,
+		permissions
+	});
+});
+
+client.On("token_refresh", async () =>
+{
+	await auth.RefreshToken(localStorage.getItem("refreshToken"));
+});
+
+client.On("connected", (channel) =>
+{
+	logger.Info(`Connected to channel ${channel}`);
+	client.Say("Connected");
+});
+
+client.On("message", (channel, username, tags, message) =>
+{
+	commandHandler.HandleMessage(channel, username, tags, message);
+});
+
+const Play = async () =>
 {
 	if(client !== null)
 	{
+		synth.cancel();
 		client.Disconnect();
 	}
 
-	client = new CopeKick(
+	const channelData = await auth.ConvertNameToIds(localStorage.getItem("channel"));
+	client.SetParams(
 	{
-		channel: "anonimsko",
+		channelId: channelData.channelId,
+		broadcasterId: channelData.broadcasterId,
 		token: localStorage.getItem("token"),
 		tokenExpire: localStorage.getItem("tokenExpire"),
-		logger: logger
+		permissions: JSON.parse(localStorage.getItem("permissions"))
 	});
 
 	client.Connect();
-
-	client.On("token_refresh", async () =>
-	{
-		const refreshToken = localStorage.getItem("refreshToken");
-
-		if(!refreshToken)
-		{
-			Authorize();
-			return;
-		}
-
-		try
-		{
-			const response = await fetch("https://cope-bot-backend.vercel.app/api/login/refresh?platform=kick",
-			{
-				method: "POST",
-				headers:
-				{
-					"Content-Type": "application/json"
-				},
-				body: JSON.stringify(
-				{
-					refresh_token: refreshToken
-				})
-			});
-
-			if(!response.ok)
-			{
-				logger.Error(`Failed to refresh access token. Error code: ${response.status}`);
-				return;
-			}
-
-			const data = await response.json();
-
-			const now = Date.now();
-			localStorage.setItem("refreshToken", data.refresh_token);
-			localStorage.setItem("token", data.access_token);
-			localStorage.setItem("tokenExpire", now + data.expires_in * 1000);
-		}
-		catch(error)
-		{
-			logger.Error(`Error while sending data: ${logger.JSON(error)}`);
-		}
-	});
-
-	client.On("connected", (channel) =>
-	{
-		logger.Info(`Connected to channel ${channel}`);
-		client.Say("Connected");
-	});
-
-	client.On("message", (channel, username, tags, message) =>
-	{
-		commandHandler.HandleMessage(channel, username, tags, message);
-	});
-}
-
-const GenerateCodeVerifier = () =>
-{
-  	const array = new Uint8Array(64);
-  	window.crypto.getRandomValues(array);
-  	return btoa(String.fromCharCode(...array))
-    	.replace(/\+/g, "-")
-    	.replace(/\//g, "_")
-    	.replace(/=+$/, "");
-};
-
-const GenerateCodeChallenge = async (codeVerifier) =>
-{
-	const encoder = new TextEncoder();
-	const data = encoder.encode(codeVerifier);
-	const digest = await window.crypto.subtle.digest("SHA-256", data);
-	const base64Digest = btoa(String.fromCharCode(...new Uint8Array(digest)))
-		.replace(/\+/g, "-")
-		.replace(/\//g, "_")
-		.replace(/=+$/, "");
-  	return base64Digest;
-};
-
-const Authorize = async () =>
-{
-	const clientId = "01K1ZWA9TB9T0ND8VCMD4WAAQ2";
-	const redirectUri = "https://copiumbot.github.io/kick";
-	const permissions = `user:read channel:read channel:write chat:write ` +
-		`streamkey:read events:subscribe moderation:ban`;
-
-	const codeVerifier = GenerateCodeVerifier();
-	const codeChallenge = await GenerateCodeChallenge(codeVerifier);
-	sessionStorage.setItem("code_verifier", codeVerifier);
-
-	window.location.href = `https://id.kick.com/oauth/authorize?` +
-	`response_type=code` + 
-	`&client_id=${encodeURIComponent(clientId)}` + 
-	`&redirect_uri=${encodeURIComponent(redirectUri)}` +
-	`&scope=${encodeURIComponent(permissions)}` +
-	`&code_challenge=${encodeURIComponent(codeChallenge)}` +
-	`&code_challenge_method=S256` +
-	`&state=cope_bot`;
-}
-
-const GetAuthorizationParams = async () =>
-{
-	const code_verifier = sessionStorage.getItem("code_verifier");
-
-	const params = new URLSearchParams(window.location.search);
-	const code = params.get("code");
-	const state = params.get("state");
-
-	if(!code || !state || !code_verifier)
-		return;
-
-	if(state !== "cope_bot")
-		return;
-
-	try
-	{
-		const response = await fetch("https://cope-bot-backend.vercel.app/api/login/callback?platform=kick",
-		{
-			method: "POST",
-			headers:
-			{
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify(
-			{
-				code,
-				state,
-				code_verifier
-			})
-		});
-
-		if(!response.ok)
-		{
-			logger.Error(`Failed to get access token. Error code: ${response.status}`);
-			return;
-		}
-
-		const data = await response.json();
-
-		const now = Date.now();
-		localStorage.setItem("refreshToken", data.refresh_token);
-		localStorage.setItem("token", data.access_token);
-		localStorage.setItem("tokenExpire", now + data.expires_in * 1000);
-	}
-	catch(error)
-	{
-		logger.Error(`Error while sending data: ${logger.JSON(error)}`);
-	}
 }
 
 document.addEventListener("DOMContentLoaded", async () =>
 {
-	await GetAuthorizationParams();
+	await auth.GetAuthorizationParams();
 	Play();
 });
+
 document.getElementById("play").addEventListener("click", Play);
 
 document.getElementById("stop").addEventListener("click", () =>
@@ -223,7 +125,7 @@ document.getElementById("stop").addEventListener("click", () =>
 	client.Disconnect();
 });
 
-document.getElementById("authorize").addEventListener("click", () =>
+document.getElementById("authorize").addEventListener("click", async () =>
 {
-	Authorize();
+	await auth.Authorize();
 });

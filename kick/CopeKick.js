@@ -3,14 +3,15 @@ class CopeKick
     constructor(params = {})
     {
         this.channel = params.channel ?? null;
-        this.channelId = null;
-        this.broadasterId = null;
+        this.channelId = params.channelId ?? null;
+        this.broadasterId = params.broadasterId ?? null;
 
         this.token = params.token ?? null;
         this.tokenExpire = params.tokenExpire ?? Date.now();
+        this.permissions = params.permissions ?? {};
         
         this._events = {};
-        this._wsLink = "wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false";
+        this._wsCluster = "32cbd69e4b950bf97679";
         this._socket = null;
         this._connected = false;
         this._pingInterval = null;
@@ -51,45 +52,24 @@ class CopeKick
         this._socket?.send(JSON.stringify(data));
     }
 
-    async _ConvertNameToId(name)
+    SetParams(params = {})
     {
-        try
+        for( const [key, value] of Object.entries(params))
         {
-            const response = await fetch(`https://kick.com/api/v2/channels/${this.channel}/`,
-            {
-                method: "GET"
-            });
-
-            if(!response.ok)
-            {
-                this.logger.Error(`Failed to convert name to id. Error code: ${response.status}`);
-                return false;
-            }
-
-            const data = await response.json();
-            this.channelId = data.chatroom.channel_id;
-            this.broadasterId = data.chatroom.id;
-            return true;
-        }
-        catch(error)
-        {
-            this.logger.Error(`Failed to convert name to id: ${this.logger.JSON(error)}`);
-            return false;
+            if(key in this)
+                this[key] = value;
         }
     }
 
     async Connect()
     {
-        if(!this.channel)
+        if(!this.channelId || !this.broadasterId)
         {
-            this.logger.Error("No channel provided");
+            this.logger.Error("No channel id or broadcaster id provided");
             return;
         }
-            
-        if(!(await this._ConvertNameToId()))
-            return;
 
-        this._socket = new WebSocket(this._wsLink);
+        this._socket = new WebSocket(`wss://ws-us2.pusher.com/app/${this._wsCluster}?protocol=7&client=js&version=8.4.0&flash=false`);
         this._socket.onopen = () =>
         {
             const subscriptions =
@@ -170,8 +150,8 @@ class CopeKick
                 this._connected = true;
                 this._Emit("connected",
                     this.channel,
-                    data.socket_id,
-                    data.activity_timeout
+                    data.socket_id ?? null,
+                    data.activity_timeout ?? null
                 );
 
                 this._pingInterval = setInterval(() =>
@@ -197,50 +177,50 @@ class CopeKick
 
             case "App\\Events\\ChatMessageEvent":
                 this._Emit("message",
-                    data.chatroom_id,
-                    data.sender.slug,
+                    data.chatroom_id ?? null,
+                    data.sender.slug ?? null,
                     {
-                        time: data.created_at,
-                        messageId: data.id,
-                        messageRef: data.metadata.message_ref,
-                        userId: data.sender.id,
-                        badges: data.sender.identity.badges,
-                        color: data.sender.identity.color,
-                        displayName: data.sender.username
+                        time: data.created_at ?? null,
+                        messageId: data.id ?? null,
+                        messageRef: data.metadata?.message_ref ?? null,
+                        userId: data.sender?.id ?? null,
+                        badges: data.sender?.identity?.badges ?? null,
+                        color: data.sender?.identity?.color ?? null,
+                        displayName: data.sender?.username ?? null
                     },
-                    data.content
+                    data.content ?? null
                 );
                 break;
 
             case "App\\Events\\UserBannedEvent":
                 this._Emit("ban",
                     {
-                        id: data.user.id,
-                        displayName: data.user.username,
-                        username: data.user.slug
+                        id: data.user?.id ?? null,
+                        displayName: data.user?.username ?? null,
+                        username: data.user?.slug ?? null
                     },
                     {
-                        id: data.banned_by.id,
-                        displayName: data.banned_by.username,
-                        username: data.banned_by.slug
+                        id: data.banned_by?.id ?? null,
+                        displayName: data.banned_by?.username ?? null,
+                        username: data.banned_by?.slug ?? null
                     },
-                    data.permanent,
-                    data.permanent ? 0 : data.duration,
-                    data.permanent ? 0 : data.expires_at
+                    data.permanent ?? null,
+                    data.permanent ? 0 : (data.duration ?? null),
+                    data.permanent ? 0 : (data.expires_at ?? null)
                 );
                 break;
 
             case "App\\Events\\UserUnbannedEvent":
                 this._Emit("unban",
                     {
-                        id: data.user.id,
-                        displayName: data.user.username,
-                        username: data.user.slug
+                        id: data.user?.id ?? null,
+                        displayName: data.user?.username ?? null,
+                        username: data.user?.slug ?? null
                     },
                     {
-                        id: data.unbanned_by.id,
-                        displayName: data.unbanned_by.username,
-                        username: data.unbanned_by.slug
+                        id: data.unbanned_by?.id ?? null,
+                        displayName: data.unbanned_by?.username ?? null,
+                        username: data.unbanned_by?.slug ?? null
                     }
                 );
                 break;
@@ -249,26 +229,26 @@ class CopeKick
                 this._Emit("chat_settings_updated",
                     data.id,
                     {
-                        enabled: data.slow_mode.enabled,
-                        interval: data.slow_mode.message_interval
+                        enabled: data.slow_mode?.enabled ?? null,
+                        interval: data.slow_mode?.message_interval ?? null
                     },
                     {
-                        enabled: data.subscribers_mode.enabled
+                        enabled: data.subscribers_mode?.enabled ?? null
                     },
                     {
-                        enabled: data.followers_mode.enabled,
-                        duration: data.followers_mode.min_duration
+                        enabled: data.followers_mode?.enabled ?? null,
+                        duration: data.followers_mode?.min_duration ?? null
                     },
                     {
-                        enabled: data.emotes_mode.enabled
+                        enabled: data.emotes_mode?.enabled ?? null
                     },
                     {
-                        enabled: data.advanced_bot_protection.enabled,
-                        remaining_time: data.advanced_bot_protection.remaining_time
+                        enabled: data.advanced_bot_protection?.enabled ?? null,
+                        remaining_time: data.advanced_bot_protection?.remaining_time ?? null
                     },
                     {
-                        enabled: data.account_age.enabled,
-                        duration: data.account_age.min_duration
+                        enabled: data.account_age?.enabled ?? null,
+                        duration: data.account_age?.min_duration ?? null
                     }
                 );
                 break;
@@ -295,6 +275,9 @@ class CopeKick
 
     async Say(message)
     {
+        if(!(this.permissions).includes("chat:write"))
+            return;
+
         if(this.tokenExpire < Date.now())
             this._Emit("token_refresh");
 
@@ -339,7 +322,7 @@ class CopeKick
             }
 
             const data = await response.json();
-            if(!data.is_sent)
+            if(!data.data.is_sent)
                 this.logger.Error(`Failed to send a message. Error code: ${response.status}`);
         }
         catch(error)
