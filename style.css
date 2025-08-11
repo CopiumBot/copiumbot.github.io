@@ -1,0 +1,268 @@
+:root
+{
+    --kickColor: rgb(98, 242, 98); 
+    --kickDarkerColor: rgb(68, 202, 68); 
+    --twitchColor: rgb(169, 112, 255);
+    --twitchDarkerColor: rgb(135, 89, 204);
+    --bgColor: #0f172a;
+    --fontColor: #e2e8f0;
+}
+
+body
+{
+    background-color: var(--bgColor);
+    color: var(--fontColor);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+    overflow-x: hidden;
+}
+
+::-webkit-scrollbar
+{
+    width: 0.5rem;
+}
+
+::-webkit-scrollbar-track
+{
+    background: #1e293b;
+    border-radius: 0.2rem;
+}
+
+::-webkit-scrollbar-thumb
+{
+    background-color: #475569;
+    border-radius: 0.2rem;
+    border: 0.1rem solid #1e293b;
+}
+
+::-webkit-scrollbar-thumb:hover
+{
+    background-color: #64748b;
+}
+
+html
+{
+    scrollbar-width: thin;
+    scrollbar-color: #475569 #1e293b;
+}
+
+.mainSection
+{
+    position: relative;
+    background: radial-gradient(ellipse at 10% 90%, rgba(200, 200, 255) 0%, transparent 60%),
+        radial-gradient(ellipse at 70% 30%, rgba(200, 200, 255) 0%, transparent 40%),
+        linear-gradient(135deg, #0a0f18 0%, #0e071c 50%, #0a0f18 100%);
+    background-size: 200% 200%;
+    animation: moveGradient 30s ease-in-out infinite alternate;
+    z-index: 1;
+    padding-bottom: 5rem;
+}
+
+@keyframes moveGradient
+{
+    0% { background-position: 0% 0%; }
+    50% { background-position: 45% 65%; }
+    100% { background-position: 75% 90%; }
+}
+
+.header
+{
+    width: 40%;
+    margin-bottom: 10vh;
+}
+
+.header p
+{
+    font-size: 2vh;
+    color: #e2e8f0;
+}
+
+.gradientText
+{
+    background: linear-gradient(90deg, var(--kickDarkerColor), var(--kickColor), var(--twitchColor), var(--twitchDarkerColor));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-size: 6vh;
+}
+
+.cardPanel
+{
+    background-color: var(--bgColor);
+    border-radius: 1.5rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem;
+    max-width: 20vw;
+    transition: transform 0.3s ease-in-out;
+    margin: 0 auto;
+}
+
+.cardPanel:hover
+{
+    transform: scale(1.05);
+}
+
+.kickBorder svg
+{
+    fill: var(--kickColor);
+    height: 10vh;
+}
+
+.twitchBorder svg
+{
+    fill: var(--twitchColor);
+    height: 10vh;
+}
+
+.kickBorder
+{
+    border: 0.1rem solid var(--kickColor);
+}
+
+.twitchBorder
+{
+    border: 0.1rem solid var(--twitchColor);
+}
+
+.buttonKick a, .buttonTwitch a
+{
+    color: var(--fontColor);
+    text-decoration: none;
+}
+
+.buttonKick
+{
+    background-color: var(--kickColor);
+    border: none;
+}
+
+.buttonKick:hover
+{
+    background-color: var(--kickDarkerColor);
+}
+
+.buttonTwitch
+{
+    background-color: var(--twitchColor);
+    border: none;
+}
+
+.buttonTwitch:hover
+{
+    background-color: var(--twitchDarkerColor);
+}
+
+.bottomSection
+{
+    background-color: var(--bgColor);
+}
+
+.featurePanel
+{
+    background-color: #1e293b;
+    border: 0.1rem solid gray;
+}
+
+.featurePanel svg
+{
+    height: 5vh;
+}
+
+
+
+@media (max-width: 992px)
+{
+    .header
+    {
+        width: 80%;
+        margin-bottom: 5rem;
+    }
+    
+    .gradientText
+    {
+        font-size: 3rem;
+    }
+    
+    .header p
+    {
+        font-size: 1rem;
+    }
+    
+    .w-50
+    {
+        width: 100% !important;
+        padding: 0 1rem;
+    }
+    
+    .cardPanel
+    {
+        max-width: 90%;
+        height: 100%;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+    }
+    
+    .kickBorder svg,
+    .twitchBorder svg
+    {
+        height: 3vh;
+        margin-bottom: 1rem;
+    }
+    
+    .bottomSection .lead
+    {
+        max-width: 90% !important;
+        margin-bottom: 3rem !important;
+    }
+    
+    .featurePanel
+    {
+        margin-bottom: 1.5rem;
+    }
+    
+    .featurePanel svg
+    {
+        height: 2vh;
+    }
+}
+
+@media (max-width: 576px)
+{
+    .gradientText
+    {
+        font-size: 2rem;
+    }
+    
+    .header
+    {
+        width: 90%;
+        padding-top: 2rem !important;
+    }
+    
+    .cardPanel
+    {
+        padding: 1rem;
+    }
+    
+    .cardPanel h2
+    {
+        font-size: 1.25rem;
+        margin-bottom: 1rem !important;
+    }
+    
+    .cardPanel p
+    {
+        font-size: 1rem !important;
+        margin-bottom: 1.5rem !important;
+    }
+    
+    .btn-lg
+    {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+}
