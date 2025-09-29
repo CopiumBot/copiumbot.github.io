@@ -17,6 +17,7 @@ let auth = new Auth(
 let client = new CopeTwitch({ logger });
 let config =
 {
+	ttsEnabled: localStorage.getItem("twitch_ttsEnabled") === "true" ? true : false,
 	voice: localStorage.getItem("twitch_voice") ?? null,
 	volume: localStorage.getItem("twitch_volume") ?? 0.5,
 	blockedTerms: localStorage.getItem("twitch_blockedTerms") !== null ?
@@ -24,7 +25,8 @@ let config =
 	notifications:
 	{
 		follow: localStorage.getItem("twitch_followNotifications") === "true" ? true : false
-	}
+	},
+	chattersInterval: null
 }
 
 commandHandler
@@ -91,7 +93,7 @@ commandHandler
 .On(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/,
 	false, (channel, username, tags, message, originalMessage) =>
 {
-	AddToQueue(null, `${tags.displayName} sent a link`);
+	AddToQueue(null, `${username} sent a link`);
 	AddChatMessage(tags.color, username, tags.chatter_user_login, originalMessage, tags.badges);
 })
 .OnArray(config.blockedTerms, false, (channel, username, tags, message, originalMessage) =>
@@ -181,17 +183,22 @@ client.On("connected", async () =>
 	SetConnectionStatus("Connected");
 	logger.Info(`Successfully connected`);
 
+	document.getElementById("followers").innerHTML = "";
 	const followers = await client.GetFollowers();
-	followers.forEach((item, index) =>
-	{
-		AddFollower(item.user_name, item.followed_at);
-	});
+	for(let i = followers.length - 1; i >= 0; --i)
+		AddFollower(followers[i].user_name, followers[i].followed_at);
+
+	DisplayChatters();
+	if(config.chattersInterval === null)
+		config.chattersInterval = setInterval(DisplayChatters, 60000);
 });
 
 client.On("disconnected", () =>
 {
 	SetConnectionStatus("Not Connected");
 	logger.Info(`Disconnected`);
+	clearInterval(config.chattersInterval);
+	config.chattersInterval = null;
 });
 
 client.On("message", (channel, username, tags, message) =>
@@ -204,11 +211,10 @@ client.On("follow", async (displayName, username, id, time) =>
 	if(config.notifications.follow)
 		client.Say(`Thank you for following ${displayName}`);
 
+	document.getElementById("followers").innerHTML = "";
 	const followers = await client.GetFollowers();
-	followers.forEach((item, index) =>
-	{
-		AddFollower(item.user_name, item.followed_at);
-	});
+	for(let i = followers.length - 1; i >= 0; --i)
+		AddFollower(followers[i].user_name, followers[i].followed_at);
 });
 
 document.addEventListener("DOMContentLoaded", async () =>
@@ -227,6 +233,8 @@ document.getElementById("authorize").addEventListener("click", () =>
 
 document.getElementById("ttsButton").addEventListener("click", () =>
 {
+	const ttsEnabled = localStorage.getItem("twitch_ttsEnabled") == "true" ?
+		true : false;
 	const savedVoice = localStorage.getItem("twitch_voice") ?? voices[0].name;
 	const savedVolume = localStorage.getItem("twitch_volume") ?? 0.5;
 
@@ -241,18 +249,34 @@ document.getElementById("ttsButton").addEventListener("click", () =>
     });
 
 	DisplayModal("Text To Speech", `
+		<div class="w-100 d-flex justify-content-between align-items-center mb-2">
+			<label class="form-label m-0 pe-2" for="enableTTS">Enable</label>
+			
+			<div class="form-check form-switch">
+				<input class="form-check-input" type="checkbox" role="switch" id="enableTTS">
+			</div>
+		</div>	
 		<label class="form-label m-0 pe-2 mb-2" for="modalVoiceSelect">Voice</label>
 		<select class="form-select mb-3" id="modalVoiceSelect" style="background-color: var(--bgColor);
 			border-color: var(--primaryColor); cursor: pointer; color: var(--fontColor);">
 			${voiceListHTML}
 		</select>
-		<div>
+		<div class="mb-2">
 			<label for="volumeSlider" class="form-label mb-0">Volume: <span id="volumeValue">
 				${savedVolume * 100}</span>%</label>
 			<input type="range" class="form-range" min="0" max="100" id="volumeSlider" value="${savedVolume * 100}">
 		</div>
+		<button class="btn" id="skipButton" style="background-color: var(--primaryColor); float: right;"
+			>Skip Messages</button>
 	`);
+	document.getElementById("enableTTS").checked = ttsEnabled;
 	document.getElementById("volumeSlider").style.setProperty("--range-fill", `${savedVolume * 100}%`);
+
+	document.getElementById("enableTTS").addEventListener("change", (e) =>
+	{
+		config.ttsEnabled = e.currentTarget.checked;
+		localStorage.setItem("twitch_ttsEnabled", config.ttsEnabled);
+	});
 
 	document.getElementById("modalVoiceSelect").addEventListener("change", (e) =>
 	{
@@ -268,6 +292,11 @@ document.getElementById("ttsButton").addEventListener("click", () =>
 	{
 		config.volume = e.currentTarget.value / 100;
 		localStorage.setItem("twitch_volume", config.volume);
+	});
+
+	document.getElementById("skipButton").addEventListener("click", () =>
+	{
+		synth.cancel();
 	});
 });
 
@@ -287,6 +316,18 @@ document.getElementById("moderationButton").addEventListener("click", () =>
 		config.blockedTerms = e.currentTarget.value != "" ? e.currentTarget.value.split("\n") : [];
 		localStorage.setItem("twitch_blockedTerms", JSON.stringify(config.blockedTerms));
 	});
+});
+
+document.getElementById("commandsButton").addEventListener("click", () =>
+{
+	DisplayModal("Commands", `
+		<p>!resetTTS - clears the TTS queue.</p>
+		<p>!mute (name) - mutes the person.</p>
+		<p>!unmute (name) - unmutes the person.</p>
+		<p>!title (title) - sets the stream title.</p>
+		<p>!tags (tag1), (tag2) - sets the stream tags.</p>
+		<p>!category (name) - sets the stream category.</p>
+	`);
 });
 
 document.getElementById("notificationsButton").addEventListener("click", () =>
@@ -314,6 +355,9 @@ document.getElementById("notificationsButton").addEventListener("click", () =>
 
 const AddToQueue = (username, message) =>
 {
+	if(config.ttsEnabled === false)
+		return;
+
 	if(userSettings.get(username)?.muted === true)
 		return;
 

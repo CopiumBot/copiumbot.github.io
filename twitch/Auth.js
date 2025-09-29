@@ -78,7 +78,7 @@ class Auth
 
             if(!response.ok)
             {
-                logger.Error(`Failed to validate access token. Error code: ${response.status}`);
+                logger.Error(`Failed to validate access token. Error: (${response.status}) ${response.statusText}`);
                 this.RefreshToken(refreshToken);
                 return;
             }
@@ -132,7 +132,7 @@ class Auth
 
                 if(!response.ok)
                 {
-                    logger.Error(`Failed to get access token. Error code: ${response.status}`);
+                    logger.Error(`Failed to get access token. Error: (${response.status}) ${response.statusText}`);
                     return;
                 }
 
@@ -176,7 +176,7 @@ class Auth
 
 			if(!response.ok)
 			{
-				logger.Error(`Failed to refresh access token. Error code: ${response.status}`);
+				logger.Error(`Failed to refresh access token. Error: (${response.status}) ${response.statusText}`);
 				return;
 			}
 

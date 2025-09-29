@@ -158,6 +158,71 @@ const AddFollower = (username, time) =>
     followersElement.scrollTop = followersElement.scrollHeight;
 }
 
+const DisplayChatters = async () =>
+{
+    const [chatters, mods, vips] = await Promise.all(
+    [
+        client.GetChatters(),
+        client.GetMods(),
+        client.GetVips()
+    ]);
+
+    const broadcasterId = client.GetUserId();
+    const broadcaster = [];
+    const finalMods = [];
+    const finalVips = [];
+    const finalChatters = [];
+
+    for(const [id, data] of chatters.entries())
+    {
+        if(broadcasterId === id)
+            broadcaster.push(data.displayName);
+        else if(mods.has(id))
+            finalMods.push(data.displayName);
+        else if(vips.has(id))
+            finalVips.push(data.displayName);
+        else
+            finalChatters.push(data.displayName);
+    }
+
+    const chattersElement = document.getElementById("chatters");
+    chattersElement.innerHTML = "";
+
+    ChattersSection("Broadcaster", broadcaster);
+    ChattersSection("Moderators", finalMods);
+    ChattersSection("VIPs", finalVips);
+    ChattersSection("Viewers", finalChatters);
+}
+
+const ChattersSection = (title, chatters, color) =>
+{
+    if(chatters.length === 0)
+        return;
+
+    const chattersElement = document.getElementById("chatters");
+    const div = document.createElement("div");
+    div.classList.add("mb-3");
+    //div.classList.add("border-bottom");
+
+    let listElement = "";
+
+    chatters.forEach((item, index) =>
+    {
+        listElement += `
+            <p class="fw-bold" style="color: var(--primaryDarkerColor);
+                margin: 0; font-size: 1.7vh">${item}</p>
+        `;
+    });
+
+    div.innerHTML = `
+        <p class="fw-bold" style="font-size: 1.2vh; color: #999;
+            margin: 0;">${title}</p>
+        ${listElement}
+    `;
+
+    chattersElement.appendChild(div);
+}
+
 const DisplayModal = (title, content) =>
 {
     const modalContainer = document.getElementById("modalContainer");

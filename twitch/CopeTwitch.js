@@ -76,12 +76,14 @@ class CopeTwitch
         {
             this._connected = false;
             this._Emit("disconnected", reason);
+            this.logger.Info(`Disconnected: ${reason}`);
         }
 
         this._socket.onerror = (error) =>
         {
             this._connected = false;
             this._Emit("error", error);
+            this.logger.Error(`Websocket error: ${error}`);
         }
     }
 
@@ -174,9 +176,57 @@ class CopeTwitch
         }
     }
 
+    async FetchAllPages(url, headers)
+    {
+        let allData = [];
+        let currentUrl = url;
+
+        while(currentUrl)
+        {
+            try
+            {
+                const response = await fetch(currentUrl,
+                {
+                    method: "GET",
+                    headers
+                });
+
+                if(!response.ok)
+                {
+                    this.logger.Error(`External API error. Error: (${response.status}) ${response.statusText}`);
+                    return data;
+                }
+
+                const data = await response.json();
+                allData.push(...data.data);
+
+                const nextCursor = data.pagination?.cursor;
+                if(nextCursor)
+                {
+                    const separator = currentUrl.includes("?") ? "&" : "?";
+                    currentUrl = `${url}${separator}after=${nextCursor}`;
+                }
+                else
+                    currentUrl = null;
+            }
+            catch(error)
+            {
+                this.logger.Error(`Error while sending data: ${error.message}`);
+                return allData;
+            }
+        }
+
+        return allData;
+    }
+
     GetPermissions()
     {
         return this.permissions;
+    }
+
+    GetUserId()
+    {
+        return this.userId;
     }
 
     async SubscribeToEvent(type, version, condition, transport)
@@ -209,7 +259,7 @@ class CopeTwitch
 
             if(!response.ok)
             {
-                this.logger.Error(`External API error. Error code: ${response.status}`);
+                this.logger.Error(`External API error. Error: (${response.status}) ${response.statusText}`);
                 return false;
             }
 
@@ -218,7 +268,7 @@ class CopeTwitch
         }
         catch(error)
         {
-            this.logger.Error(`Error while sending data: ${this.logger.JSON(error)}`);
+            this.logger.Error(`Error while sending data: ${error.message}`);
             return false;
         }
     }
@@ -271,11 +321,11 @@ class CopeTwitch
             });
 
             if(!response.ok)
-                this.logger.Error(`External API error. Error code: ${response.status}`);
+                this.logger.Error(`External API error. Error: (${response.status}) ${response.statusText}`);
         }
         catch(error)
         {
-            this.logger.Error(`Error while sending data: ${this.logger.JSON(error)}`);
+            this.logger.Error(`Error while sending data: ${error.message}`);
         }
     }
 
@@ -310,11 +360,11 @@ class CopeTwitch
             });
 
             if(!response.ok)
-                this.logger.Error(`External API error. Error code: ${response.status}`);
+                this.logger.Error(`External API error. Error: (${response.status}) ${response.statusText}`);
         }
         catch(error)
         {
-            this.logger.Error(`Error while sending data: ${this.logger.JSON(error)}`);
+            this.logger.Error(`Error while sending data: ${error.message}`);
         }
     }
 
@@ -343,11 +393,11 @@ class CopeTwitch
             });
 
             if(!response.ok)
-                this.logger.Error(`External API error. Error code: ${response.status}`);
+                this.logger.Error(`External API error. Error: (${response.status}) ${response.statusText}`);
         }
         catch(error)
         {
-            this.logger.Error(`Error while sending data: ${this.logger.JSON(error)}`);
+            this.logger.Error(`Error while sending data: ${error.message}`);
         }
     }
 
@@ -370,7 +420,7 @@ class CopeTwitch
 
             if(!response.ok)
             {
-                this.logger.Error(`External API error. Error code: ${response.status}`);
+                this.logger.Error(`External API error. Error: (${response.status}) ${response.statusText}`);
                 return [];
             }
                 
@@ -379,7 +429,7 @@ class CopeTwitch
         }
         catch(error)
         {
-            this.logger.Error(`Error while sending data: ${this.logger.JSON(error)}`);
+            this.logger.Error(`Error while sending data: ${error.message}`);
             return [];
         }
     }
@@ -406,7 +456,7 @@ class CopeTwitch
 
             if(!response.ok)
             {
-                this.logger.Error(`External API error. Error code: ${response.status}`);
+                this.logger.Error(`External API error. Error: (${response.status}) ${response.statusText}`);
                 return [];
             }
                 
@@ -415,8 +465,69 @@ class CopeTwitch
         }
         catch(error)
         {
-            this.logger.Error(`Error while sending data: ${this.logger.JSON(error)}`);
+            this.logger.Error(`Error while sending data: ${error.message}`);
             return [];
         }
+    }
+
+    async GetChatters()
+    {
+        if(!(this.permissions).includes("moderator:read:chatters"))
+            return [];
+
+        if(this.tokenExpire < Date.now())
+            await this._Emit("request_token_refresh");
+
+        const data = await this.FetchAllPages(`https://api.twitch.tv/helix/chat/chatters?broadcaster_id=${this.userId}&moderator_id=${this.userId}&first=1000`,
+        {
+            "Authorization": `Bearer ${this.token}`,
+            "Client-Id": this.clientId
+        });
+
+        const map = new Map();
+        data.forEach(chatter =>
+        {
+            map.set(chatter.user_id,
+            {
+                username: chatter.user_login,
+                displayName: chatter.user_name
+            });
+        });
+
+        return map;
+    }
+
+    async GetMods()
+    {
+        if(!(this.permissions).includes("moderation:read"))
+            return new Set();
+
+        if(this.tokenExpire < Date.now())
+            await this._Emit("request_token_refresh");
+
+        const data = await this.FetchAllPages(`https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${this.userId}&moderator_id=${this.userId}&first=100`,
+        {
+            "Authorization": `Bearer ${this.token}`,
+            "Client-Id": this.clientId
+        });
+
+        return new Set(data.map(moderator => moderator.user_id));
+    }
+
+    async GetVips()
+    {
+        if(!(this.permissions).includes("channel:read:vips"))
+            return new Set();
+
+        if(this.tokenExpire < Date.now())
+            await this._Emit("request_token_refresh");
+
+        const data = await this.FetchAllPages(`https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${this.userId}&moderator_id=${this.userId}&first=100`,
+        {
+            "Authorization": `Bearer ${this.token}`,
+            "Client-Id": this.clientId
+        });
+
+        return new Set(data.map(moderator => moderator.user_id));
     }
 }

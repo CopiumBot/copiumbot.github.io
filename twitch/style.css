@@ -274,6 +274,13 @@ body
     box-shadow: var(--shadow);
 }
 
+.list
+{
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 .logo
 {
     font-size: 2.5vh;
@@ -307,8 +314,8 @@ body
 
 .tag
 {
-    font-size: 0.6rem;
-    padding: 0.1rem 0.4rem;
+    font-size: 0.8vh;
+    padding: 0.15vh 0.2vw;
     border-radius: 0.5rem;
     color: white;
     margin-left: 0.5rem;
@@ -349,7 +356,7 @@ body
 
 .messageTime
 {
-    font-size: 0.75rem;
+    font-size: 0.9vh;
     color: #888;
     margin-left: 0.5rem;
     display: inline-flex;
@@ -368,18 +375,18 @@ body
 .followCard i
 {
     color: #ff69b4;
-    font-size: 1.5rem;
+    font-size: 2vh;
 }
 
 .followCard p
 {
-    font-size: 1.2rem;
+    font-size: 1.7vh;
     width: 100%;
     margin-bottom: 0;
 }
 
 .followCard span
 {
-    font-size: 0.8rem;
-    margin-right: 0.5rem;
+    font-size: 1.2vh;
+    margin-right: 0.5vw;
 }
