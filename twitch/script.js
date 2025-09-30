@@ -24,7 +24,8 @@ let config =
 		JSON.parse(localStorage.getItem("twitch_blockedTerms")) : [],
 	notifications:
 	{
-		follow: localStorage.getItem("twitch_followNotifications") === "true" ? true : false
+		follow: localStorage.getItem("twitch_followNotifications") === "true" ? true : false,
+		raid: localStorage.getItem("twitch_raidNotifications") === "true" ? true : false
 	},
 	chattersInterval: null
 }
@@ -217,6 +218,16 @@ client.On("follow", async (displayName, username, id, time) =>
 		AddFollower(followers[i].user_name, followers[i].followed_at);
 });
 
+client.On("raid", (displayName, username, id, viewers) =>
+{
+	if(config.notifications.raid === false)
+		return;
+
+	const label = `${displayName} raided you with ${viewers} viewer${viewers !== 1 ? "s" : ""}.`
+	AddChatNotification(label);
+	AddToQueue(null, label);
+});
+
 document.addEventListener("DOMContentLoaded", async () =>
 {
 	await auth.GetAuthorizationParams();
@@ -334,6 +345,8 @@ document.getElementById("notificationsButton").addEventListener("click", () =>
 {
 	const savedFollowNotifications = localStorage.getItem("twitch_followNotifications") == "true" ?
 		true : false;
+	const savedRaidedNotifications = localStorage.getItem("twitch_raidNotifications") == "true" ?
+		true : false;
 
 	DisplayModal("Notifications", `
 		<div class="w-100 d-flex justify-content-between align-items-center">
@@ -342,14 +355,27 @@ document.getElementById("notificationsButton").addEventListener("click", () =>
 			<div class="form-check form-switch">
 				<input class="form-check-input" type="checkbox" role="switch" id="followNotifications">
 			</div>
-		</div>	
+		</div>
+		<div class="w-100 d-flex justify-content-between align-items-center">
+			<label class="form-label m-0 pe-2" for="raidNotifications">Raid</label>
+			
+			<div class="form-check form-switch">
+				<input class="form-check-input" type="checkbox" role="switch" id="raidNotifications">
+			</div>
+		</div>
 	`);
 	document.getElementById("followNotifications").checked = savedFollowNotifications;
+	document.getElementById("raidNotifications").checked = savedRaidedNotifications;
 
 	document.getElementById("followNotifications").addEventListener("change", (e) =>
 	{
 		config.notifications.follow = e.currentTarget.checked;
 		localStorage.setItem("twitch_followNotifications", config.notifications.follow);
+	});
+	document.getElementById("raidNotifications").addEventListener("change", (e) =>
+	{
+		config.notifications.raid = e.currentTarget.checked;
+		localStorage.setItem("twitch_raidNotifications", config.notifications.raid);
 	});
 });
 

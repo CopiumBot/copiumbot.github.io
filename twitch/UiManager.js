@@ -202,7 +202,6 @@ const ChattersSection = (title, chatters, color) =>
     const chattersElement = document.getElementById("chatters");
     const div = document.createElement("div");
     div.classList.add("mb-3");
-    //div.classList.add("border-bottom");
 
     let listElement = "";
 

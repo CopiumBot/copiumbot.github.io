@@ -127,6 +127,14 @@ class CopeTwitch
                     "method": "websocket",
                     "session_id": payload?.session?.id
                 });
+                success = await this.SubscribeToEvent("channel.raid", "1",
+                {
+                    "to_broadcaster_user_id": this.userId
+                },
+                {
+                    "method": "websocket",
+                    "session_id": payload?.session?.id
+                });
                 if(success)
                     this._Emit("connected");
                 break;
@@ -160,6 +168,15 @@ class CopeTwitch
                             payload.event?.user_login,
                             payload.event?.user_id,
                             payload.event?.followed_at
+                        );
+                        break;
+
+                    case "channel.raid":
+                        this._Emit("raid",
+                            payload.event?.from_broadcaster_user_name,
+                            payload.event?.from_broadcaster_user_login,
+                            payload.event?.from_broadcaster_user_id,
+                            payload.event?.viewers
                         );
                         break;
 
