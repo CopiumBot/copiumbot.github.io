@@ -94,7 +94,7 @@ commandHandler
 .On(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/,
 	false, (channel, username, tags, message, originalMessage) =>
 {
-	AddToQueue(null, `${username} sent a link`);
+	AddToQueue(tags.chatter_user_login, `${username} sent a link`);
 	AddChatMessage(tags.color, username, tags.chatter_user_login, originalMessage, tags.badges);
 })
 .OnArray(config.blockedTerms, false, (channel, username, tags, message, originalMessage) =>
@@ -244,11 +244,6 @@ document.getElementById("authorize").addEventListener("click", () =>
 
 document.getElementById("ttsButton").addEventListener("click", () =>
 {
-	const ttsEnabled = localStorage.getItem("twitch_ttsEnabled") == "true" ?
-		true : false;
-	const savedVoice = localStorage.getItem("twitch_voice") ?? voices[0].name;
-	const savedVolume = localStorage.getItem("twitch_volume") ?? 0.5;
-
 	let voiceListHTML = "";
 	voices.forEach((item, index) =>
     {
@@ -274,14 +269,14 @@ document.getElementById("ttsButton").addEventListener("click", () =>
 		</select>
 		<div class="mb-2">
 			<label for="volumeSlider" class="form-label mb-0">Volume: <span id="volumeValue">
-				${savedVolume * 100}</span>%</label>
-			<input type="range" class="form-range" min="0" max="100" id="volumeSlider" value="${savedVolume * 100}">
+				${config.volume * 100}</span>%</label>
+			<input type="range" class="form-range" min="0" max="100" id="volumeSlider" value="${config.volume * 100}">
 		</div>
 		<button class="btn" id="skipButton" style="background-color: var(--primaryColor); float: right;"
 			>Skip Messages</button>
 	`);
-	document.getElementById("enableTTS").checked = ttsEnabled;
-	document.getElementById("volumeSlider").style.setProperty("--range-fill", `${savedVolume * 100}%`);
+	document.getElementById("enableTTS").checked = config.ttsEnabled;
+	document.getElementById("volumeSlider").style.setProperty("--range-fill", `${config.volume * 100}%`);
 
 	document.getElementById("enableTTS").addEventListener("change", (e) =>
 	{
@@ -313,13 +308,11 @@ document.getElementById("ttsButton").addEventListener("click", () =>
 
 document.getElementById("moderationButton").addEventListener("click", () =>
 {
-	const savedBlockedTerms = localStorage.getItem("twitch_blockedTerms") !== null ?
-		JSON.parse(localStorage.getItem("twitch_blockedTerms")).join("\n") : "";
-
 	DisplayModal("Moderation", `
 		<label for="volumeSlider" class="form-label">Blocked Terms</label>
 		<textarea class="form-control" id="blockedTerms" style="background-color: var(--bgColor);
-			border-color: var(--primaryColor); color: var(--fontColor); height: 10vh;">${savedBlockedTerms}</textarea>
+			border-color: var(--primaryColor); color: var(--fontColor); height: 10vh;"
+				>${config.blockedTerms.length === 0 ? "" : config.blockedTerms.join("\n")}</textarea>
 	`);
 
 	document.getElementById("blockedTerms").addEventListener("change", (e) =>
@@ -343,11 +336,6 @@ document.getElementById("commandsButton").addEventListener("click", () =>
 
 document.getElementById("notificationsButton").addEventListener("click", () =>
 {
-	const savedFollowNotifications = localStorage.getItem("twitch_followNotifications") == "true" ?
-		true : false;
-	const savedRaidedNotifications = localStorage.getItem("twitch_raidNotifications") == "true" ?
-		true : false;
-
 	DisplayModal("Notifications", `
 		<div class="w-100 d-flex justify-content-between align-items-center">
 			<label class="form-label m-0 pe-2" for="followNotifications">New Follow</label>
@@ -364,8 +352,8 @@ document.getElementById("notificationsButton").addEventListener("click", () =>
 			</div>
 		</div>
 	`);
-	document.getElementById("followNotifications").checked = savedFollowNotifications;
-	document.getElementById("raidNotifications").checked = savedRaidedNotifications;
+	document.getElementById("followNotifications").checked = config.notifications.follow;
+	document.getElementById("raidNotifications").checked = config.notifications.raid;
 
 	document.getElementById("followNotifications").addEventListener("change", (e) =>
 	{
