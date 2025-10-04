@@ -158,10 +158,10 @@ client.On("request_token_refresh", async () =>
 		userId: validatedData?.user_id ?? null
 	});
 
+	logger.Info("Refresh token request completed successfully");
+
 	if(client.IsConnected() === false)
 		client.Connect();
-
-	logger.Info("Refresh token request completed successfully");
 });
 
 client.On("connecting", () =>

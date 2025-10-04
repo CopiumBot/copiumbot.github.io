@@ -63,7 +63,7 @@ class CopeTwitch
     async Connect()
     {
         if(!this.token || !this.tokenExpire  || this.permissions ||
-            !this.clientId || this.userId)
+            !this.clientId || !this.userId)
         {
             this.logger.Error("Client is missing required parameters");
             return;
