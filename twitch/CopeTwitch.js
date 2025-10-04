@@ -3,8 +3,8 @@ class CopeTwitch
     constructor(params = {})
     {
         this.token = params.token ?? null;
-        this.tokenExpire = params.tokenExpire ?? Date.now();
-        this.permissions = params.permissions ?? [];
+        this.tokenExpire = params.tokenExpire ?? null;
+        this.permissions = params.permissions ?? null;
         this.clientId = params.clientId ?? null;
         this.userId = params.userId ?? null;
         
@@ -57,8 +57,12 @@ class CopeTwitch
 
     async Connect()
     {
-        if(!this.token || !this.clientId || !this.tokenExpire)
+        if(!this.token || !this.tokenExpire  || this.permissions ||
+            !this.clientId || this.userId)
+        {
+            this.logger.Error("Client is missing required parameters");
             return;
+        }
 
         this._socket = new WebSocket(`wss://eventsub.wss.twitch.tv/ws`);
         this._socket.onopen = () =>

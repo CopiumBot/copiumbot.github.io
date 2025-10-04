@@ -30,6 +30,22 @@ let config =
 	chattersInterval: null
 }
 
+auth.On("authorize", (data) =>
+{
+	if(data.state != sessionStorage.getItem("code_verifier"))
+		return;
+
+	UpdateSessionData(
+	{
+		token: data?.access_token ?? null,
+		refreshToken: data?.refresh_token ?? null,
+		expiresIn: data?.expires_in ?? 0,
+		permissions: data?.scope ?? []
+	});
+
+	window.location.href = auth.redirectUri;
+});
+
 commandHandler
 .On(/^\!resetTTS/, true, (channel, username, tags, message, originalMessage) =>
 {
@@ -99,10 +115,10 @@ commandHandler
 })
 .OnArray(config.blockedTerms, false, (channel, username, tags, message, originalMessage) =>
 {
-	if(IsMod(tags.badges) === false)
+	if(commandHandler.IsMod(tags.badges) === false)
 	{
 		AddChatNotification(`${username} used a blacklisted term.`);
-		client.Ban(tags.chatter_user_id, 600, "Bot");
+		client.Ban(tags.chatter_user_id, 600, "Use of a blacklisted term.");
 	}
 	AddChatMessage(tags.color, username, tags.chatter_user_login, originalMessage, tags.badges);
 })
@@ -112,66 +128,31 @@ commandHandler
 	AddToQueue(tags.chatter_user_login, message);
 });
 
-auth.On("token_received", (event, data) =>
-{
-	if(event === "authorized" && data.state != sessionStorage.getItem("code_verifier"))
-		return;
-
-	const expires_in = data.expires_in ?? 0;
-	const now = Date.now();
-	const token = data.access_token ?? null;
-	const tokenExpire = now + expires_in * 1000;
-	const permissions = data.scope ?? [];
-
-	localStorage.setItem("twitch_refreshToken", data.refresh_token ?? null);
-	localStorage.setItem("twitch_token", token);
-	localStorage.setItem("twitch_permissions", JSON.stringify(permissions));
-
-	if(event === "authorized")
-	{
-		localStorage.setItem("twitch_tokenExpire", tokenExpire);
-		localStorage.setItem("twitch_tokenExpireInSeconds", expires_in);
-		window.location.href = "https://copiumbot.github.io/twitch/";
-		return;
-	}
-		
-	client.SetParams(
-	{
-		token,
-		tokenExpire,
-		permissions
-	});
-
-	if(event === "refreshed")
-		auth.ValidateToken(token, data.refresh_token);
-});
-
-auth.On("token_validated", (data) =>
-{
-	const expires_in = data.expires_in ?? 0;
-	const now = Date.now();
-	const tokenExpire = now + expires_in * 1000;
-	const permissions = data.scopes ?? [];
-
-	localStorage.setItem("twitch_tokenExpire", tokenExpire);
-	localStorage.setItem("twitch_permissions", JSON.stringify(permissions));
-	localStorage.setItem("twitch_tokenExpireInSeconds", expires_in);
-
-	client.SetParams(
-	{
-		token: localStorage.getItem("twitch_token"),
-		clientId: CLIENT_ID,
-		permissions,
-		tokenExpire,
-		userId: data.user_id
-	});
-
-	client.Connect();
-});
-
 client.On("request_token_refresh", async () =>
 {
-	await auth.RefreshToken(localStorage.getItem("twitch_refreshToken"));
+	const refreshToken = localStorage.getItem("twitch_refreshToken");
+	if(refreshToken === null)
+		return;
+
+	const refreshedData = await auth.RefreshToken(refreshToken);
+	if(refreshedData === null)
+		return;
+
+	if(refreshedData?.access_token === null || refreshedData?.access_token === undefined)
+		return;
+
+	const validatedData = await auth.ValidateToken(refreshedData.access_token);
+	if(validatedData === null)
+		return;
+
+	UpdateSessionData(
+	{
+		token: validatedData?.access_token ?? null,
+		refreshToken: refreshedData?.refresh_token ?? null,
+		expiresIn: validatedData?.expires_in ?? 0,
+		permissions: validatedData?.scopes ?? [],
+		userId: validatedData?.user_id ?? null
+	});
 });
 
 client.On("connecting", () =>
@@ -231,10 +212,29 @@ client.On("raid", (displayName, username, id, viewers) =>
 document.addEventListener("DOMContentLoaded", async () =>
 {
 	await auth.GetAuthorizationParams();
+	
+	const token = localStorage.getItem("twitch_token");
+	if(token === null)
+		return;
 
-	if(localStorage.getItem("twitch_token"))
-		await auth.ValidateToken(localStorage.getItem("twitch_token"),
-			localStorage.getItem("twitch_refreshToken"));
+	const validatedData = await auth.ValidateToken(token);
+	if(validatedData === null)
+		return;
+
+	client.SetParams(
+	{
+		clientId: CLIENT_ID
+	});
+
+	UpdateSessionData(
+	{
+		token: validatedData?.access_token ?? null,
+		expiresIn: validatedData?.expires_in ?? 0,
+		permissions: validatedData?.scopes ?? [],
+		userId: validatedData?.user_id ?? null
+	});
+
+	client.Connect();
 });
 
 document.getElementById("authorize").addEventListener("click", () =>
@@ -386,3 +386,27 @@ window.addEventListener("beforeunload", () =>
 {
 	client.Disconnect();
 });
+
+const UpdateSessionData = (params) =>
+{
+	const { token, refreshToken, expiresIn, permissions, userId } = params;
+
+	const now = Date.now();
+	const tokenExpire = now + expiresIn * 1000;
+
+	localStorage.setItem("twitch_token", token);
+	localStorage.setItem("twitch_permissions", JSON.stringify(permissions));
+	localStorage.setItem("twitch_tokenExpire", tokenExpire);
+	localStorage.setItem("twitch_tokenExpireInSeconds", expiresIn);
+
+	if(refreshToken !== undefined)
+		localStorage.setItem("twitch_refreshToken", refreshToken);
+
+	client.SetParams(
+	{
+		token,
+		tokenExpire,
+		permissions,
+		userId: userId ?? null
+	})
+}

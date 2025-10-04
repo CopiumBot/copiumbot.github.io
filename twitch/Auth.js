@@ -63,7 +63,7 @@ class Auth
         `&state=${encodeURIComponent(code_verifier)}`;
     }
 
-    async ValidateToken(token, refreshToken)
+    async ValidateToken(token)
     {
         try
         {
@@ -79,19 +79,17 @@ class Auth
             if(!response.ok)
             {
                 logger.Error(`Failed to validate access token. Error: (${response.status}) ${response.statusText}`);
-                this.RefreshToken(refreshToken);
-                return;
+                return null;
             }
 
-            const data = await response.json();
-            this._Emit("token_validated",
-                data
-            );
             logger.Info("Token validated");
+            const data = await response.json();
+            return data;
         }
         catch(error)
         {
             logger.Error(`Error while sending data2: ${logger.JSON(error)}`);
+            return null;
         }
     }
 
@@ -136,12 +134,11 @@ class Auth
                     return;
                 }
 
+                logger.Info("Token received");
                 const data = await response.json();
-                this._Emit("token_received",
-                    "authorized",
+                this._Emit("authorized",
                     data
                 );
-                logger.Info("Token received");
             }
             catch(error)
             {
@@ -157,7 +154,7 @@ class Auth
     async RefreshToken(refresh_token)
     {
         if(!refresh_token || !this.platform)
-            return;
+            return null;
 
         try
 		{
@@ -177,19 +174,17 @@ class Auth
 			if(!response.ok)
 			{
 				logger.Error(`Failed to refresh access token. Error: (${response.status}) ${response.statusText}`);
-				return;
+				return null;
 			}
 
+            logger.Info("Token refreshed");
 			const data = await response.json();
-			this._Emit("token_received",
-                "refreshed",
-                data
-            );
-			logger.Info("Token refreshed");
+			return data;
 		}
 		catch(error)
 		{
 			logger.Error(`Error while sending data: ${logger.JSON(error)}`);
+            return null;
 		}
     }
 }
