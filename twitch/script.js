@@ -122,7 +122,8 @@ commandHandler
 	if(commandHandler.IsMod(tags.badges) === false)
 	{
 		AddChatNotification(`${username} used a blacklisted term.`);
-		client.Ban(tags.chatter_user_id, 600, "Use of a blacklisted term.");
+		client.Ban(tags.chatter_user_id, 600, "Use of a blacklisted term");
+		return;
 	}
 	AddChatMessage(tags.color, username, tags.chatter_user_login, originalMessage, tags.badges);
 	AddToQueue(tags.chatter_user_login, message);
