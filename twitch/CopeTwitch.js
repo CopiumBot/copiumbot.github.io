@@ -30,7 +30,10 @@ class CopeTwitch
     {
         const listeners = this._events[event];
         if(listeners)
-            listeners.forEach(listener => listener(...args));
+        {
+            const promises = listeners.map(listener => listener(...args));
+            await Promise.all(promises);
+        }
     }
 
     On(event, listener)
@@ -144,8 +147,12 @@ class CopeTwitch
                     "method": "websocket",
                     "session_id": payload?.session?.id
                 });
+
                 if(success)
+                {
                     this._Emit("connected");
+                    this._connected = true;
+                }
                 break;
 
             case "session_keepalive":
