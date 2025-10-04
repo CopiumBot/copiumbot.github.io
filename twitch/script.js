@@ -151,7 +151,7 @@ client.On("request_token_refresh", async () =>
 
 	UpdateSessionData(
 	{
-		token: validatedData?.access_token ?? null,
+		token: refreshedData.access_token,
 		refreshToken: refreshedData?.refresh_token ?? null,
 		expiresIn: validatedData?.expires_in ?? 0,
 		permissions: validatedData?.scopes ?? [],
@@ -235,10 +235,10 @@ document.addEventListener("DOMContentLoaded", async () =>
 		client._Emit("request_token_refresh");
 		return;
 	}
-	
+
 	UpdateSessionData(
 	{
-		token: validatedData?.access_token ?? null,
+		token,
 		expiresIn: validatedData?.expires_in ?? 0,
 		permissions: validatedData?.scopes ?? [],
 		userId: validatedData?.user_id ?? null
