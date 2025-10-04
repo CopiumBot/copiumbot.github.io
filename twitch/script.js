@@ -14,7 +14,11 @@ let auth = new Auth(
 	platform: "twitch",
 	logger
 });
-let client = new CopeTwitch({ logger });
+let client = new CopeTwitch(
+{
+	clientId: CLIENT_ID,
+	logger
+});
 let config =
 {
 	ttsEnabled: localStorage.getItem("twitch_ttsEnabled") === "true" ? true : false,
@@ -231,12 +235,7 @@ document.addEventListener("DOMContentLoaded", async () =>
 		client._Emit("request_token_refresh");
 		return;
 	}
-
-	client.SetParams(
-	{
-		clientId: CLIENT_ID
-	});
-
+	
 	UpdateSessionData(
 	{
 		token: validatedData?.access_token ?? null,
