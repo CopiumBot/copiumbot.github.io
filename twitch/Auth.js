@@ -79,7 +79,7 @@ class Auth
             if(!response.ok)
             {
                 logger.Error(`Failed to validate access token. Error: (${response.status}) ${response.statusText}`);
-                return null;
+                return false;
             }
 
             logger.Info("Token validated");

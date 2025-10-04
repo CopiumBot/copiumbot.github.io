@@ -55,6 +55,11 @@ class CopeTwitch
         }
     }
 
+    IsConnected()
+    {
+        return this._connected;
+    }
+
     async Connect()
     {
         if(!this.token || !this.tokenExpire  || this.permissions ||

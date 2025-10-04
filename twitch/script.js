@@ -142,7 +142,7 @@ client.On("request_token_refresh", async () =>
 		return;
 
 	const validatedData = await auth.ValidateToken(refreshedData.access_token);
-	if(validatedData === null)
+	if(validatedData === null || validatedData === false)
 		return;
 
 	UpdateSessionData(
@@ -153,6 +153,11 @@ client.On("request_token_refresh", async () =>
 		permissions: validatedData?.scopes ?? [],
 		userId: validatedData?.user_id ?? null
 	});
+
+	if(client.IsConnected() === false)
+		client.Connect();
+
+	logger.Info("Refresh token request completed successfully");
 });
 
 client.On("connecting", () =>
@@ -220,6 +225,12 @@ document.addEventListener("DOMContentLoaded", async () =>
 	const validatedData = await auth.ValidateToken(token);
 	if(validatedData === null)
 		return;
+
+	if(validatedData === false)
+	{
+		client._Emit("request_token_refresh");
+		return;
+	}
 
 	client.SetParams(
 	{
