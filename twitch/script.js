@@ -125,6 +125,7 @@ commandHandler
 		client.Ban(tags.chatter_user_id, 600, "Use of a blacklisted term.");
 	}
 	AddChatMessage(tags.color, username, tags.chatter_user_login, originalMessage, tags.badges);
+	AddToQueue(tags.chatter_user_login, message);
 })
 .Unhandled((channel, username, tags, message) =>
 {

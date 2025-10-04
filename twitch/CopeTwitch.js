@@ -260,7 +260,7 @@ class CopeTwitch
         if(!(this.permissions).includes("channel:read:subscriptions"))
             return false;
 
-        if(this.tokenExpire < Date.now())
+        if(this.tokenExpire - 5000 < Date.now())
             await this._Emit("request_token_refresh");
 
         try
@@ -307,7 +307,7 @@ class CopeTwitch
         if(!(this.permissions).includes("user:bot"))
             return;
 
-        if(this.tokenExpire < Date.now())
+        if(this.tokenExpire - 5000 < Date.now())
             await this._Emit("request_token_refresh");
 
         const maxLength = 500;
@@ -360,7 +360,7 @@ class CopeTwitch
         if(!(this.permissions).includes("moderator:manage:banned_users"))
             return;
 
-        if(this.tokenExpire < Date.now())
+        if(this.tokenExpire - 5000 < Date.now())
             await this._Emit("request_token_refresh");
 
         try
@@ -399,7 +399,7 @@ class CopeTwitch
         if(!(this.permissions).includes("channel:manage:broadcast"))
             return;
 
-        if(this.tokenExpire < Date.now())
+        if(this.tokenExpire - 5000 < Date.now())
             await this._Emit("request_token_refresh");
 
         try
@@ -429,7 +429,7 @@ class CopeTwitch
 
     async GetCategory(name)
     {
-        if(this.tokenExpire < Date.now())
+        if(this.tokenExpire - 5000 < Date.now())
             await this._Emit("request_token_refresh");
 
         try
@@ -465,7 +465,7 @@ class CopeTwitch
         if(!(this.permissions).includes("moderator:read:followers"))
             return [];
 
-        if(this.tokenExpire < Date.now())
+        if(this.tokenExpire - 5000 < Date.now())
             await this._Emit("request_token_refresh");
 
         try
@@ -501,7 +501,7 @@ class CopeTwitch
         if(!(this.permissions).includes("moderator:read:chatters"))
             return [];
 
-        if(this.tokenExpire < Date.now())
+        if(this.tokenExpire - 5000 < Date.now())
             await this._Emit("request_token_refresh");
 
         const data = await this.FetchAllPages(`https://api.twitch.tv/helix/chat/chatters?broadcaster_id=${this.userId}&moderator_id=${this.userId}&first=1000`,
@@ -528,7 +528,7 @@ class CopeTwitch
         if(!(this.permissions).includes("moderation:read"))
             return new Set();
 
-        if(this.tokenExpire < Date.now())
+        if(this.tokenExpire - 5000 < Date.now())
             await this._Emit("request_token_refresh");
 
         const data = await this.FetchAllPages(`https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${this.userId}&moderator_id=${this.userId}&first=100`,
@@ -545,7 +545,7 @@ class CopeTwitch
         if(!(this.permissions).includes("channel:read:vips"))
             return new Set();
 
-        if(this.tokenExpire < Date.now())
+        if(this.tokenExpire - 5000 < Date.now())
             await this._Emit("request_token_refresh");
 
         const data = await this.FetchAllPages(`https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${this.userId}&moderator_id=${this.userId}&first=100`,
