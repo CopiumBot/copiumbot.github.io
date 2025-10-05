@@ -21,15 +21,14 @@ let client = new CopeTwitch(
 });
 let config =
 {
-	ttsEnabled: localStorage.getItem("twitch_ttsEnabled") === "true" ? true : false,
+	ttsEnabled: localStorage.getItem("twitch_ttsEnabled") === "true",
 	voice: localStorage.getItem("twitch_voice") ?? null,
-	volume: localStorage.getItem("twitch_volume") ?? 0.5,
-	blockedTerms: localStorage.getItem("twitch_blockedTerms") !== null ?
-		JSON.parse(localStorage.getItem("twitch_blockedTerms")) : [],
+	volume: parseFloat(localStorage.getItem("twitch_volume") ?? 0.5),
+	blockedTerms: JSON.parse(localStorage.getItem("twitch_blockedTerms") ?? "[]"),
 	notifications:
 	{
-		follow: localStorage.getItem("twitch_followNotifications") === "true" ? true : false,
-		raid: localStorage.getItem("twitch_raidNotifications") === "true" ? true : false
+		follow: localStorage.getItem("twitch_followNotifications") === "true",
+		raid: localStorage.getItem("twitch_raidNotifications") === "true"
 	},
 	chattersInterval: null
 }
@@ -259,7 +258,7 @@ document.getElementById("ttsButton").addEventListener("click", () =>
 	let voiceListHTML = "";
 	voices.forEach((item, index) =>
     {
-		const isSelected = item.name === savedVoice ? "selected" : "";
+		const isSelected = item.name === config.voice ? "selected" : "";
         voiceListHTML += `
             <option value="${item.name}" style="color: var(--fontColor);" ${isSelected}>
                 ${item.name} (${item.lang})</option>

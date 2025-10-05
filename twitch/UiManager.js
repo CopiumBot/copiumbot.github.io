@@ -5,7 +5,7 @@ let voices = [];
 synth.onvoiceschanged = () =>
 {
     voices = synth.getVoices();
-    if(config.voice == null)
+    if(config.voice == null && voices.length > 0)
         config.voice = voices[0].name;
 }
 
@@ -85,7 +85,7 @@ const AddChatMessage = (color, displayName, username, message, tags = []) =>
                 ${time}
             </span>
         </div>
-        <div>
+        <div style="width: 100%; word-wrap: break-word;">
             ${message}
         </div>
     `;

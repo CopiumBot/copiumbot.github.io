@@ -199,8 +199,7 @@ body
 .sidebar
 {
     background-color: var(--menuColor);
-    width: 15vw;
-    min-width: 200px;
+    width: 12%;
     padding: 0.5rem;
     padding-top: 3rem;
     position: sticky;
@@ -263,7 +262,7 @@ body
     display: flex;
     flex-direction: row;
     gap: 1.5rem;
-    width: 100%;
+    width: 88%;
 }
 
 .panel
