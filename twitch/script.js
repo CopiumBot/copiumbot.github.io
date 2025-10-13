@@ -33,7 +33,7 @@ let config =
 	chattersInterval: null
 }
 
-auth.On("authorize", (data) =>
+auth.On("authorized", (data) =>
 {
 	if(data.state != sessionStorage.getItem("code_verifier"))
 		return;
