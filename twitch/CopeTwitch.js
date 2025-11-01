@@ -434,6 +434,39 @@ class CopeTwitch
         }
     }
 
+    async GetUser(id)
+    {
+        if(this.tokenExpire - 5000 < Date.now())
+            await this._Emit("request_token_refresh");
+
+        try
+	    {
+            const response = await fetch(`https://api.twitch.tv/helix/users?id=${encodeURIComponent(id)}`,
+            {
+                method: "GET",
+                headers:
+                {
+                    "Authorization": `Bearer ${this.token}`,
+                    "Client-Id": this.clientId
+                }
+            });
+
+            if(!response.ok)
+            {
+                this.logger.Error(`External API error. Error: (${response.status}) ${response.statusText}`);
+                return [];
+            }
+                
+            const data = await response.json();
+            return data.data;
+        }
+        catch(error)
+        {
+            this.logger.Error(`Error while sending data: ${error.message}`);
+            return [];
+        }
+    }
+
     async GetCategory(name)
     {
         if(this.tokenExpire - 5000 < Date.now())

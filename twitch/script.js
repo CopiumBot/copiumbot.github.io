@@ -30,7 +30,8 @@ let config =
 		follow: localStorage.getItem("twitch_followNotifications") === "true",
 		raid: localStorage.getItem("twitch_raidNotifications") === "true"
 	},
-	chattersInterval: null
+	chattersInterval: null,
+	muteNextBroadcasterMessage: false
 }
 
 auth.On("authorized", (data) =>
@@ -90,17 +91,23 @@ commandHandler
 	const streamTags = message.split(", ");
 	client.UpdateChannelData({"tags": streamTags});
 	client.Say(`${username} set the stream tags to: ${message}.`);
+	config.muteNextBroadcasterMessage = true;
 })
 .On(/^\!title\s/, true, (channel, username, tags, message, originalMessage) =>
 {
 	client.UpdateChannelData({"title": message});
 	client.Say(`${username} set the stream title to: ${message}.`);
+	config.muteNextBroadcasterMessage = true;
 })
 .On(/^\!category\s/, true, async (channel, username, tags, message, originalMessage) =>
 {
+	config.muteNextBroadcasterMessage = true;
 	const category = await client.GetCategory(message);
 	if(category.length === 0)
+	{
+		client.Say(`Unable to find a fitting category for: ${message}.`);
 		return;
+	}
 
 	client.UpdateChannelData({"game_id": category[0].id});
 	client.Say(`${username} set the stream category to: ${category[0].name}.`);
@@ -127,9 +134,35 @@ commandHandler
 	AddChatMessage(tags.color, username, tags.chatter_user_login, originalMessage, tags.badges);
 	AddToQueue(tags.chatter_user_login, message);
 })
+.OnArray([/discord/gi, /instagram/gi, /dc/gi, /ig/gi, /collab/gi],
+	false, async (channel, username, tags, message, originalMessage) =>
+{
+	if(commandHandler.IsMod(tags.badges) === false)
+	{
+		let userData = await client.GetUser(tags.chatter_user_id);
+		let accountAge = new Date(userData[0].created_at);
+		let now = new Date();
+		let weekInMs = 7 * 24 * 60 * 60 * 1000;
+
+		if(accountAge.getTime() > now.getTime() - weekInMs)
+		{
+			AddChatNotification(`${username} has been detected as a bot.`);
+			client.Ban(tags.chatter_user_id, 600, "Detected a suspicious message on a non-aged account");
+			return;
+		}
+	}
+	AddChatMessage(tags.color, username, tags.chatter_user_login, originalMessage, tags.badges);
+	AddToQueue(tags.chatter_user_login, message);
+})
 .Unhandled((channel, username, tags, message) =>
 {
 	AddChatMessage(tags.color, username, tags.chatter_user_login, message, tags.badges);
+
+	if(tags.chatter_user_id === client.userId && config.muteNextBroadcasterMessage === true)
+	{
+		config.muteNextBroadcasterMessage = false;
+		return;
+	}
 	AddToQueue(tags.chatter_user_login, message);
 });
 
