@@ -72,8 +72,8 @@ commandHandler
 	const dateStr = `${pad(date.getHours())}:${pad(date.getMinutes())} ` +
 		`${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
 
-	const infoStr = `Display name: ${userData[0].display_name}\n` +
-					`ID: ${userData[0].id}\n` +
+	const infoStr = `Username: ${userData[0].display_name}, ` +
+					`ID: ${userData[0].id}, ` +
 					`Created at: ${dateStr}`
 
 	client.Say(infoStr);
