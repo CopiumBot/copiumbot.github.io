@@ -56,6 +56,27 @@ commandHandler
 	synth.cancel();
 	AddChatNotification(`${username} reset the TTS.`);
 })
+.On(/^\!info\s/, true, async (channel, username, tags, message, originalMessage) =>
+{
+	let userData = await client.GetUser("login", message);
+
+	if(userData.length === 0)
+	{
+		client.Say(`Unable to find an account with that name.`);
+		return;
+	}
+
+	const pad = (num) => String(num).padStart(2, "0");
+
+	const date = new Date(userData[0].created_at)
+	const dateStr = `${pad(date.getHours())}:${pad(date.getMinutes())} ` +
+		`${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
+
+	client.Say(`Display name: ${userData[0].display_name}\n` +
+				`ID: ${userData[0].id}\n` +
+				`Created at: ${dateStr}`
+	);
+})
 .On(/^\!mute\s/, true, (channel, username, tags, message, originalMessage) =>
 {
 	userSettings.set(message,
@@ -139,7 +160,7 @@ commandHandler
 {
 	if(commandHandler.IsMod(tags.badges) === false)
 	{
-		let userData = await client.GetUser(tags.chatter_user_id);
+		let userData = await client.GetUser("id", tags.chatter_user_id);
 		let accountAge = new Date(userData[0].created_at);
 		let now = new Date();
 		let weekInMs = 7 * 24 * 60 * 60 * 1000;

@@ -434,14 +434,14 @@ class CopeTwitch
         }
     }
 
-    async GetUser(id)
+    async GetUser(type, value)
     {
         if(this.tokenExpire - 5000 < Date.now())
             await this._Emit("request_token_refresh");
 
         try
 	    {
-            const response = await fetch(`https://api.twitch.tv/helix/users?id=${encodeURIComponent(id)}`,
+            const response = await fetch(`https://api.twitch.tv/helix/users?${encodeURIComponent(type)}=${encodeURIComponent(value)}`,
             {
                 method: "GET",
                 headers:
