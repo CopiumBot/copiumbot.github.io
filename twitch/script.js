@@ -72,10 +72,14 @@ commandHandler
 	const dateStr = `${pad(date.getHours())}:${pad(date.getMinutes())} ` +
 		`${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
 
-	client.Say(`Display name: ${userData[0].display_name}\n` +
-				`ID: ${userData[0].id}\n` +
-				`Created at: ${dateStr}`
-	);
+	const infoStr = `Display name: ${userData[0].display_name}\n` +
+					`ID: ${userData[0].id}\n` +
+					`Created at: ${dateStr}`
+
+	client.Say(infoStr);
+	AddChatNotification(infoStr);
+
+	config.muteNextBroadcasterMessage = true;
 })
 .On(/^\!mute\s/, true, (channel, username, tags, message, originalMessage) =>
 {
