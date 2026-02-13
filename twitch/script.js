@@ -458,11 +458,11 @@ const AddToQueue = (username, message) =>
 	if(userSettings.get(username)?.muted === true)
 		return;
 
-    let utterance = new SpeechSynthesisUtterance(message);
+    let utterance = new SpeechSynthesisUtterance(ReplaceCharacters(message));
     utterance.volume = config.volume;
 	const currentVoice = userSettings.has(username) ? userSettings.get(username).voice : config.voice;
     utterance.voice = voices.find(voice => voice.name === currentVoice);
-    synth.speak(ReplaceCharacters(utterance));
+    synth.speak(utterance);
 }
 
 window.addEventListener("beforeunload", () =>
