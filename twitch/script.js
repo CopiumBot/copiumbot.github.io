@@ -436,20 +436,6 @@ document.getElementById("notificationsButton").addEventListener("click", () =>
 	});
 });
 
-const ReplaceCharacters = (text) =>
-{
-	const map =
-	{
-		"a": "á", "c": "ć", "e": "é", "g": "ğ", "h": "ħ",
-    	"i": "í", "l": "ł", "n": "ń", "o": "ó", "r": "ř",
-    	"s": "ș", "t": "ť", "u": "ú", "w": "ŵ", "y": "ý", "z": "ź"
-	};
-
-	const regex = new RegExp(Object.keys(map).join("|"), "g");
-
-	return text.replace(regex, (matched) => map[matched]);
-}
-
 const AddToQueue = (username, message) =>
 {
 	if(config.ttsEnabled === false)
@@ -458,7 +444,7 @@ const AddToQueue = (username, message) =>
 	if(userSettings.get(username)?.muted === true)
 		return;
 
-    let utterance = new SpeechSynthesisUtterance(ReplaceCharacters(message));
+    let utterance = new SpeechSynthesisUtterance(message);
     utterance.volume = config.volume;
 	const currentVoice = userSettings.has(username) ? userSettings.get(username).voice : config.voice;
     utterance.voice = voices.find(voice => voice.name === currentVoice);
