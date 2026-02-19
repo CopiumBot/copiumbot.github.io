@@ -177,7 +177,7 @@ commandHandler
 		}
 	}
 	AddChatMessage(tags.color, username, tags.chatter_user_login, originalMessage, tags.badges);
-	AddToQueue(tags.chatter_user_login, message);
+	AddToQueue(tags.chatter_user_login, originalMessage);
 })
 .Unhandled((channel, username, tags, message) =>
 {
